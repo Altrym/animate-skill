@@ -16,6 +16,7 @@ UPDATE_CHECK_INTERVAL_SECONDS=43200
 
 API="${MOTION_STUDIO_API_URL:-https://motion-studio.up.railway.app}"
 KEY="${MOTION_STUDIO_API_KEY:-}"
+ORIGINAL_ARGS=("$@")
 
 GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RED='\033[0;31m'
 DIM='\033[0;90m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -41,51 +42,9 @@ remote_skill_url_from_json() {
   python3 -c "import sys,json; print(json.load(sys.stdin).get('download_url',''))" 2>/dev/null
 }
 
-check_for_skill_update() {
-  local force="${1:-0}"
-  mkdir -p "$CACHE_DIR"
-
-  local now
-  now=$(date +%s)
-
-  local last=0
-  if [ -f "$UPDATE_CHECK_FILE" ]; then
-    last=$(cat "$UPDATE_CHECK_FILE" 2>/dev/null || echo 0)
-  fi
-
-  if [ "$force" != "1" ] && [ $((now - last)) -lt "$UPDATE_CHECK_INTERVAL_SECONDS" ]; then
-    return 0
-  fi
-
-  echo "$now" > "$UPDATE_CHECK_FILE"
-
-  local info
-  info=$(fetch_remote_skill_info) || return 0
-
-  local remote_version
-  remote_version=$(echo "$info" | remote_skill_version_from_json)
-  [ -z "$remote_version" ] && return 0
-
-  local local_version
-  local_version=$(local_skill_version)
-
-  if [ "$remote_version" != "$local_version" ]; then
-    echo -e "${YELLOW}↻ Skill update available${RESET}"
-    echo -e "${DIM}  Local:  $local_version${RESET}"
-    echo -e "${DIM}  Remote: $remote_version${RESET}"
-    echo -e "${DIM}  Run 'bash scripts/sync.sh update' to install it${RESET}"
-  fi
-}
-
-cmd_update() {
-  header "Updating Motion Studio skill"
-
-  local info
-  info=$(fetch_remote_skill_info) || {
-    echo -e "${RED}✗ Could not reach the Motion Studio update server${RESET}"
-    return 1
-  }
-
+install_skill_bundle() {
+  local info="$1"
+  local mode="${2:-manual}"
   local remote_version download_url local_version
   remote_version=$(echo "$info" | remote_skill_version_from_json)
   download_url=$(echo "$info" | remote_skill_url_from_json)
@@ -96,7 +55,9 @@ cmd_update() {
   fi
 
   if [ -n "$remote_version" ] && [ "$remote_version" = "$local_version" ]; then
-    echo -e "${GREEN}✓ Motion Studio is already up to date (${local_version})${RESET}"
+    if [ "$mode" = "manual" ]; then
+      echo -e "${GREEN}✓ Motion Studio is already up to date (${local_version})${RESET}"
+    fi
     return 0
   fi
 
@@ -129,10 +90,71 @@ cmd_update() {
   rm -rf "$tmp_dir"
 
   date +%s > "$UPDATE_CHECK_FILE" 2>/dev/null || true
-  echo -e "${GREEN}✓ Motion Studio updated${RESET}"
-  if [ -n "$remote_version" ]; then
-    echo -e "${DIM}  Version: $remote_version${RESET}"
+  if [ "$mode" = "manual" ]; then
+    echo -e "${GREEN}✓ Motion Studio updated${RESET}"
+    if [ -n "$remote_version" ]; then
+      echo -e "${DIM}  Version: $remote_version${RESET}"
+    fi
+  else
+    echo -e "${GREEN}✓ Motion Studio auto-updated to ${remote_version}${RESET}"
   fi
+}
+
+check_for_skill_update() {
+  local force="${1:-0}"
+  mkdir -p "$CACHE_DIR"
+
+  local now
+  now=$(date +%s)
+
+  local last=0
+  if [ -f "$UPDATE_CHECK_FILE" ]; then
+    last=$(cat "$UPDATE_CHECK_FILE" 2>/dev/null || echo 0)
+  fi
+
+  if [ "$force" != "1" ] && [ $((now - last)) -lt "$UPDATE_CHECK_INTERVAL_SECONDS" ]; then
+    return 0
+  fi
+
+  echo "$now" > "$UPDATE_CHECK_FILE"
+
+  local info
+  info=$(fetch_remote_skill_info) || return 0
+
+  local remote_version
+  remote_version=$(echo "$info" | remote_skill_version_from_json)
+  [ -z "$remote_version" ] && return 0
+
+  local local_version
+  local_version=$(local_skill_version)
+
+  if [ "$remote_version" != "$local_version" ]; then
+    if [ "${MOTION_STUDIO_AUTO_UPDATED:-0}" = "1" ]; then
+      echo -e "${YELLOW}↻ Motion Studio update still pending${RESET}"
+      echo -e "${DIM}  Local:  $local_version${RESET}"
+      echo -e "${DIM}  Remote: $remote_version${RESET}"
+      return 0
+    fi
+
+    echo -e "${YELLOW}↻ Motion Studio update found${RESET}"
+    echo -e "${DIM}  Local:  $local_version${RESET}"
+    echo -e "${DIM}  Remote: $remote_version${RESET}"
+    install_skill_bundle "$info" auto || return 0
+    echo -e "${DIM}  Restarting with the latest Motion Studio bundle...${RESET}"
+    exec env MOTION_STUDIO_AUTO_UPDATED=1 bash "$SKILL_DIR/scripts/sync.sh" "${ORIGINAL_ARGS[@]}"
+  fi
+}
+
+cmd_update() {
+  header "Updating Motion Studio skill"
+
+  local info
+  info=$(fetch_remote_skill_info) || {
+    echo -e "${RED}✗ Could not reach the Motion Studio update server${RESET}"
+    return 1
+  }
+
+  install_skill_bundle "$info" manual
 }
 
 flush_cache() {

@@ -67,6 +67,8 @@ bash scripts/sync.sh stats     # Community stats
 bash scripts/sync.sh update    # Install the latest Motion Studio bundle
 ```
 
+`pull`, `capture`, `log`, and `stats` now do a lightweight periodic update check and auto-apply newer Motion Studio bundles when available.
+
 ## Categories
 
 Prompt Brief · Story Structure · Scene Composition · Motion Timing · Transitions · SVG Assets · Image Prompts · Brand Consistency · Audio & SFX · Rendering & Export

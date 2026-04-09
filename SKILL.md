@@ -202,5 +202,5 @@ Installed copies do not hot-reload the skill files on every use.
 
 Instead:
 - `pull`, `capture`, `log`, and `stats` do a lightweight periodic update check against the Motion Studio server
-- if a newer bundle exists, the script tells the user to run `bash scripts/sync.sh update`
-- `bash scripts/sync.sh update` downloads and installs the latest full skill bundle, including `SKILL.md`, `references/`, and `scripts/`
+- if a newer bundle exists, the script auto-installs it once per check window and restarts into the updated bundle
+- `bash scripts/sync.sh update` is still available for a manual refresh at any time
