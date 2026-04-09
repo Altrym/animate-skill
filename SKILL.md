@@ -19,6 +19,22 @@ This returns categorized animation patterns with confirmation counts. Higher cou
 
 If the server is unreachable, fall back to `references/animation-patterns.md`.
 
+## Embedded Remotion Workflow
+
+When the work turns into actual Remotion code, treat the Remotion skill as a built-in secondary workflow instead of improvising from scratch.
+
+Load `references/remotion-playbook.md` when you need any of these:
+- composition structure or `calculateMetadata()`
+- scene sequencing, timing, transitions, or trims
+- audio, voiceover, captions, or sound design timing
+- asset handling for images, video, fonts, Lottie, charts, or maps
+- FFmpeg-style preprocessing such as trimming clips or detecting silence
+- rendering/export decisions, transparency, codecs, or media-debugging
+
+Do not load the whole playbook by default. Pull only the relevant subsection once the task clearly becomes Remotion-specific.
+
+If the user wants inspiration, stronger prompt structure, or concrete video starting points, load `references/prompt-recipes.md`.
+
 ## Operating Model
 
 - Treat the final video as software, not as raw text-to-video generation.
@@ -64,6 +80,14 @@ Before coding, convert the request into a compact internal production brief:
 
 This mirrors Replit's "enhance prompt" behavior for video prompts. Do not stay at the level of the user's vague wording if a sharper brief can be inferred safely.
 
+When turning a loose prompt into a buildable brief:
+- make timing explicit in seconds and, when useful, frames
+- name the fps when motion smoothness matters
+- describe motion behavior, not just the final state
+- break complex videos into scenes or beats before implementation
+- prefer staggered entrances, springs, and easing over simultaneous linear motion
+- if the user requests a long or crowded video, split it into scenes first and only then sequence it
+
 ### 3. Scene Planning
 
 - Break the video into explicit scenes or beats with rough timing.
@@ -86,12 +110,14 @@ This mirrors Replit's "enhance prompt" behavior for video prompts. Do not stay a
 - Make the first 2 to 3 seconds visually decisive.
 - Keep text readable at the target aspect ratio.
 - Design for browser preview first, then render via Remotion.
+- When Remotion details matter, switch to `references/remotion-playbook.md` and apply the matching section for compositions, sequencing, timing, assets, audio, subtitles, or rendering.
 
 ### 6. Rendering
 
 - Default to a Remotion pipeline for export and frame-accurate rendering.
 - Structure scenes so they can map cleanly to Remotion compositions or timed sequences.
 - If a live browser preview exists, keep its timing aligned with the Remotion render model instead of maintaining two unrelated timelines.
+- If the user asks for a full Remotion deliverable, include composition wiring and explicit duration / fps settings instead of returning only a leaf component.
 
 ## Pattern Categories
 
@@ -160,7 +186,9 @@ Auto-capture hook:
 motion-studio/
 ├── SKILL.md
 ├── references/
-│   └── animation-patterns.md
+│   ├── animation-patterns.md
+│   ├── prompt-recipes.md
+│   └── remotion-playbook.md
 └── scripts/
     ├── sync.sh
     ├── capture-hook.sh

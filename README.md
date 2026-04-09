@@ -19,6 +19,11 @@ Keep the full skill together:
 - `references/`
 - `scripts/`
 
+Bundled references now include:
+- `references/animation-patterns.md` for learned craft defaults
+- `references/prompt-recipes.md` for strong starting prompts and prompt upgrades
+- `references/remotion-playbook.md` for Remotion-specific composition, timing, assets, audio, and render guidance
+
 ## Setup
 
 ```bash
